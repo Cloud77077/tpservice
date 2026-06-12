@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>OTP Service Manager</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5F0E8;
+  --surface:#FDFAF4;
+  --surface2:#EDE8DC;
+  --border:#D6CFBF;
+  --accent:#5C8A6E;
+  --accent2:#A0522D;
+  --danger:#C0392B;
+  --warning:#D4870A;
+  --text:#2C2416;
+  --muted:#7A6F5E;
+  --green:#2E7D52;
+  --radius:10px;
+  --shadow:0 2px 8px rgba(44,36,22,0.10);
+  --shadow-lg:0 4px 20px rgba(44,36,22,0.14);
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;font-size:15px;line-height:1.5}
+button{cursor:pointer;font-family:inherit}
+input,select{font-family:inherit}
+
+/* ===== API KEY SCREEN ===== */
+#apiKeyScreen{
+  display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;
+  display:flex;align-items:center;justify-content:center;padding:16px;
+}
+#apiKeyScreen.hidden{display:none}
+.ak-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:32px 28px;width:100%;max-width:420px;box-shadow:var(--shadow-lg);
+}
+.ak-logo{font-size:28px;font-weight:700;color:var(--accent);margin-bottom:4px}
+.ak-sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+.ak-label{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block}
+.ak-input{
+  width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;
+  background:var(--surface2);color:var(--text);font-size:15px;outline:none;
+  transition:border-color .2s;
+}
+.ak-input:focus{border-color:var(--accent)}
+.ak-btn{
+  width:100%;margin-top:16px;padding:12px;background:var(--accent);color:#fff;
+  border:none;border-radius:8px;font-size:15px;font-weight:600;
+  transition:background .2s;
+}
+.ak-btn:hover{background:#4a7059}
+.ak-btn:disabled{background:#aaa;cursor:not-allowed}
+.ak-error{color:var(--danger);font-size:13px;margin-top:8px;display:none}
+
+/* ===== MAIN APP ===== */
+#mainApp{display:none}
+#mainApp.visible{display:block}
+
+/* ===== HEADER ===== */
+header{
+  position:sticky;top:0;z-index:100;background:var(--surface);
+  border-bottom:1px solid var(--border);box-shadow:var(--shadow);
+}
+.header-inner{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;max-width:900px;margin:0 auto;
+}
+.logo{display:flex;align-items:center;gap:8px}
+.logo-icon{
+  width:36px;height:36px;background:var(--accent);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;
+}
+.logo-text{font-weight:700;font-size:17px;color:var(--text)}
+.logo-sub{font-size:11px;color:var(--muted)}
+.balance-pill{
+  display:flex;align-items:center;gap:6px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:20px;padding:6px 14px;
+  cursor:pointer;transition:all .2s;font-size:14px;
+}
+.balance-pill:hover{border-color:var(--accent);background:var(--bg)}
+.balance-pill .bal-icon{color:var(--accent);font-size:16px}
+.balance-amount{font-weight:700;color:var(--green)}
+.balance-label{color:var(--muted);font-size:12px}
+
+/* ===== KEY BAR ===== */
+.key-bar{
+  background:var(--surface2);border-bottom:1px solid var(--border);
+  padding:6px 16px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;max-width:100%;
+}
+.key-bar-inner{
+  display:flex;align-items:center;gap:10px;max-width:900px;margin:0 auto;width:100%;
+}
+.key-masked{color:var(--muted);font-family:monospace;font-size:12px}
+.logout-btn{
+  background:none;border:1px solid var(--border);border-radius:6px;
+  padding:3px 10px;font-size:12px;color:var(--accent2);
+  transition:all .2s;
+}
+.logout-btn:hover{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+
+/* ===== TABS ===== */
+.tabs-wrap{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  position:sticky;top:57px;z-index:99;
+}
+.tabs{
+  display:flex;max-width:900px;margin:0 auto;padding:0 8px;
+}
+.tab-btn{
+  flex:1;padding:12px 8px;background:none;border:none;font-size:14px;font-weight:500;
+  color:var(--muted);border-bottom:2.5px solid transparent;transition:all .2s;
+}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.tab-btn:hover{color:var(--text)}
+
+/* ===== CONTENT ===== */
+.content{max-width:900px;margin:0 auto;padding:16px;}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ===== CARDS ===== */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);
+  margin-bottom:14px;
+}
+.card-title{font-size:15px;font-weight:600;margin-bottom:12px;color:var(--text)}
+
+/* ===== FORM ELEMENTS ===== */
+.form-group{margin-bottom:12px}
+.form-label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.form-control{
+  width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;
+  background:var(--surface2);color:var(--text);font-size:14px;outline:none;
+  transition:border-color .2s;
+}
+.form-control:focus{border-color:var(--accent)}
+select.form-control{cursor:pointer}
+
+/* ===== SEARCH ===== */
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap input{padding-left:36px}
+.search-icon{
+  position:absolute;left:11px;top:50%;transform:translateY(-50%);
+  color:var(--muted);font-size:15px;pointer-events:none;
+}
+
+/* ===== SERVICE LIST ===== */
+.service-list{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;
+  max-height:340px;overflow-y:auto;padding-right:4px;
+}
+.service-list::-webkit-scrollbar{width:5px}
+.service-list::-webkit-scrollbar-track{background:var(--surface2);border-radius:4px}
+.service-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.service-card{
+  background:var(--surface2);border:2px solid var(--border);border-radius:8px;
+  padding:12px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:4px;
+}
+.service-card:hover{border-color:var(--accent);background:var(--bg)}
+.service-card.selected{border-color:var(--accent);background:#edf5f0;box-shadow:0 0 0 2px rgba(92,138,110,0.2)}
+.service-name{font-weight:600;font-size:14px;color:var(--text)}
+.service-server{font-size:12px;color:var(--muted)}
+.service-price{
+  display:inline-block;background:var(--accent);color:#fff;
+  border-radius:12px;padding:2px 10px;font-size:12px;font-weight:600;
+  align-self:flex-start;margin-top:4px;
+}
+.service-empty{text-align:center;color:var(--muted);padding:32px;font-size:14px;grid-column:1/-1}
+
+/* ===== BUY PANEL ===== */
+.buy-panel{
+  background:var(--surface);border:1.5px solid var(--accent);border-radius:var(--radius);
+  padding:16px;margin-bottom:14px;box-shadow:var(--shadow);
+  animation:slideIn .2s ease;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.buy-panel-title{font-size:14px;color:var(--muted);margin-bottom:4px}
+.buy-panel-service{font-size:17px;font-weight:700;color:var(--text);margin-bottom:14px}
+.buy-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.buy-row .form-group{flex:1;min-width:140px;margin:0}
+.btn{
+  padding:9px 18px;border-radius:8px;border:none;font-size:14px;
+  font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:6px;
+}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#4a7059}
+.btn-primary:disabled{background:#aaa;cursor:not-allowed}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{background:#a93226}
+.btn-warning{background:var(--warning);color:#fff}
+.btn-warning:hover{background:#b8730a}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--border)}
+.btn-green{background:var(--green);color:#fff}
+.btn-green:hover{background:#245e3e}
+.btn-sm{padding:6px 12px;font-size:12px}
+
+/* ===== AUTO CLICKER ===== */
+.autoclicker-row{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:10px 14px;margin-top:10px;
+}
+.autoclicker-label{font-size:14px;font-weight:500;color:var(--text)}
+.autoclicker-status{font-size:12px;color:var(--muted);margin-top:2px}
+.toggle-wrap{display:flex;align-items:center;gap:8px}
+.toggle{position:relative;display:inline-block;width:44px;height:24px}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{
+  position:absolute;inset:0;background:var(--border);border-radius:24px;
+  transition:.3s;cursor:pointer;
+}
+.toggle-slider:before{
+  content:"";position:absolute;width:18px;height:18px;left:3px;bottom:3px;
+  background:#fff;border-radius:50%;transition:.3s;
+}
+.toggle input:checked + .toggle-slider{background:var(--accent)}
+.toggle input:checked + .toggle-slider:before{transform:translateX(20px)}
+
+/* ===== ACTIVE NUMBERS ===== */
+.section-header{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;
+}
+.section-title{font-size:16px;font-weight:700;color:var(--text)}
+.count-badge{
+  background:var(--accent);color:#fff;border-radius:12px;
+  padding:2px 10px;font-size:12px;font-weight:600;
+}
+.number-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;margin-bottom:12px;box-shadow:var(--shadow);
+}
+.number-card-top{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:10px;flex-wrap:wrap;gap:8px;
+}
+.number-service{font-weight:600;font-size:15px;color:var(--text)}
+.number-server{font-size:12px;color:var(--muted)}
+.number-price{
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:2px 10px;font-size:13px;font-weight:600;color:var(--accent2);
+}
+.number-phone{font-size:26px;font-weight:700;color:var(--text);letter-spacing:1px;margin:8px 0}
+.timer{
+  display:inline-block;font-size:13px;font-weight:600;
+  padding:2px 10px;border-radius:12px;background:var(--surface2);color:var(--muted);
+  border:1px solid var(--border);
+}
+.timer.urgent{background:#fde8e8;color:var(--danger);border-color:var(--danger);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.sms-box{
+  background:#edf5f0;border:1px solid var(--green);border-radius:8px;
+  padding:10px 14px;margin:10px 0;
+}
+.sms-label{font-size:11px;font-weight:600;color:var(--green);margin-bottom:4px}
+.sms-text{font-size:14px;color:var(--text);word-break:break-all}
+.otp-highlight{
+  font-size:22px;font-weight:700;color:var(--green);
+  letter-spacing:3px;display:block;margin-top:4px;
+}
+.waiting-dots{color:var(--muted);font-size:14px}
+.dots-anim::after{
+  content:"...";animation:dots 1.5s steps(4,end) infinite;
+}
+@keyframes dots{
+  0%,20%{content:"."}
+  40%{content:".."}
+  60%,100%{content:"..."}
+}
+.number-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.txn-id{font-size:11px;color:var(--muted);margin-top:6px;font-family:monospace}
+
+/* ===== ORDERS TAB ===== */
+.order-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px;margin-bottom:10px;box-shadow:var(--shadow);
+}
+.order-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px}
+.order-service{font-weight:600;font-size:14px}
+.order-status{
+  font-size:12px;padding:2px 10px;border-radius:12px;font-weight:600;
+}
+.status-active{background:#edf5f0;color:var(--green);border:1px solid var(--green)}
+.status-cancelled{background:#fde8e8;color:var(--danger);border:1px solid var(--danger)}
+.status-completed{background:#eaf0fb;color:#1a5ca0;border:1px solid #1a5ca0}
+.order-phone{font-size:18px;font-weight:700;color:var(--text);margin:6px 0 2px}
+.order-meta{font-size:12px;color:var(--muted)}
+.order-otp{
+  background:#edf5f0;border-left:3px solid var(--green);
+  padding:6px 10px;margin-top:8px;border-radius:4px;
+  font-size:13px;color:var(--green);font-weight:600;
+}
+
+/* ===== SERVICES/FILTER TAB ===== */
+.filter-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.chip{
+  padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);
+  background:var(--surface);font-size:13px;cursor:pointer;transition:all .2s;
+}
+.chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chip:hover:not(.active){border-color:var(--accent);color:var(--accent)}
+.services-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;
+}
+.svc-item{
+  background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:12px;cursor:pointer;transition:all .2s;
+}
+.svc-item:hover{border-color:var(--accent);background:var(--bg);transform:translateY(-1px)}
+.svc-item-name{font-weight:600;font-size:14px;color:var(--text)}
+.svc-item-code{font-size:11px;color:var(--muted);font-family:monospace}
+.svc-item-price{font-size:13px;font-weight:700;color:var(--accent);margin-top:6px}
+
+/* ===== MODAL ===== */
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(44,36,22,0.5);
+  z-index:1000;align-items:center;justify-content:center;padding:16px;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:24px;width:100%;max-width:380px;box-shadow:var(--shadow-lg);
+  animation:modalIn .2s ease;
+}
+@keyframes modalIn{from{opacity:0;scale:.95}to{opacity:1;scale:1}}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:8px}
+.modal-body{font-size:14px;color:var(--muted);margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end}
+
+/* ===== TOAST ===== */
+#toastContainer{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:center;
+  pointer-events:none;width:calc(100% - 32px);max-width:400px;
+}
+.toast{
+  padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;
+  box-shadow:var(--shadow-lg);animation:toastIn .3s ease;
+  pointer-events:auto;text-align:center;width:100%;
+}
+@keyframes toastIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.toast-success{background:var(--green);color:#fff}
+.toast-error{background:var(--danger);color:#fff}
+.toast-warning{background:var(--warning);color:#fff}
+.toast-info{background:var(--accent);color:#fff}
+
+/* ===== LOADING ===== */
+.loading-spinner{
+  width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);
+  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;
+}
+.loading-spinner.dark{border-color:rgba(44,36,22,.2);border-top-color:var(--accent)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay{
+  display:flex;align-items:center;justify-content:center;
+  padding:32px;color:var(--muted);flex-direction:column;gap:12px;
+}
+
+/* ===== EMPTY STATES ===== */
+.empty-state{
+  text-align:center;padding:40px 16px;color:var(--muted);
+}
+.empty-state-icon{font-size:40px;margin-bottom:10px}
+.empty-state-text{font-size:14px}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:500px){
+  .service-list{grid-template-columns:1fr}
+  .services-grid{grid-template-columns:1fr 1fr}
+  .buy-row{flex-direction:column}
+  .buy-row .btn{width:100%}
+  .number-phone{font-size:20px}
+  .number-actions{gap:6px}
+  .number-actions .btn{font-size:11px;padding:5px 9px}
+  .ak-card{padding:24px 18px}
+  .content{padding:12px}
+  .tabs-wrap{top:56px}
+}
+@media(max-width:360px){
+  .services-grid{grid-template-columns:1fr}
+  .tabs .tab-btn{font-size:12px;padding:10px 4px}
+}
+</style>
+</head>
+<body>
+
+<!-- API KEY SCREEN -->
+<div id="apiKeyScreen">
+  <div class="ak-card">
+    <div class="ak-logo">📱 OTP Manager</div>
+    <div class="ak-sub">Secure OTP number management</div>
+    <div class="form-group">
+      <label class="ak-label" for="apiKeyInput">Enter your API Key</label>
+      <input class="ak-input" type="text" id="apiKeyInput" placeholder="Your API key from otpservice.xyz" autocomplete="off"/>
+    </div>
+    <div class="ak-error" id="akError"></div>
+    <button class="ak-btn" id="akSubmitBtn" onclick="submitApiKey()">Validate &amp; Continue</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp">
+  <!-- HEADER -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">O</div>
+        <div>
+          <div class="logo-text">OTP Manager</div>
+          <div class="logo-sub">Secure OTP Management</div>
+        </div>
+      </div>
+      <div class="balance-pill" onclick="refreshBalance()" title="Tap to refresh">
+        <span class="bal-icon">₹</span>
+        <span class="balance-amount" id="balanceAmount">--</span>
+        <span class="balance-label">Wallet</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- KEY BAR -->
+  <div class="key-bar">
+    <div class="key-bar-inner">
+      <span>🔑 Key: <span class="key-masked" id="maskedKey">••••••••</span></span>
+      <button class="logout-btn" onclick="showLogoutConfirm()">Change Key</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs-wrap">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('buy')" id="tab-buy">Buy Number</button>
+      <button class="tab-btn" onclick="switchTab('orders')" id="tab-orders">Orders</button>
+      <button class="tab-btn" onclick="switchTab('services')" id="tab-services">Browse Services</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- BUY TAB -->
+    <div class="tab-panel active" id="panel-buy">
+      <div class="card">
+        <div class="card-title">🔍 Find a Service</div>
+        <div class="form-group">
+          <label class="form-label" for="countrySelect">Country</label>
+          <select class="form-control" id="countrySelect" onchange="onCountryChange()">
+            <option value="">🌍 All Countries</option>
+          </select>
+        </div>
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input class="form-control" type="text" id="serviceSearch" placeholder="Search services..." oninput="filterServices()"/>
+        </div>
+        <div class="service-list" id="serviceList">
+          <div class="service-empty">
+            <div class="loading-spinner dark"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BUY PANEL -->
+      <div class="buy-panel" id="buyPanel" style="display:none">
+        <div class="buy-panel-title">Selected Service</div>
+        <div class="buy-panel-service" id="buyPanelService">—</div>
+        <div class="buy-row">
+          <div class="form-group">
+            <label class="form-label" for="maxPriceInput">Max Price (optional)</label>
+            <input class="form-control" type="number" id="maxPriceInput" placeholder="e.g. 5" min="0" step="0.01"/>
+          </div>
+          <button class="btn btn-primary" id="buyNowBtn" onclick="buyNumber()">
+            🛒 Buy Now
+          </button>
+        </div>
+        <!-- AUTO CLICKER -->
+        <div class="autoclicker-row">
+          <div>
+            <div class="autoclicker-label">⚡ Auto Clicker</div>
+            <div class="autoclicker-status" id="autoClickerStatus">Off — Toggle to auto-retry every 5 seconds</div>
+          </div>
+          <div class="toggle-wrap">
+            <label class="toggle">
+              <input type="checkbox" id="autoClickerToggle" onchange="onAutoClickerToggle()"/>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIVE NUMBERS -->
+      <div id="activeSection" style="display:none">
+        <div class="section-header">
+          <div class="section-title">📲 Active Numbers</div>
+          <span class="count-badge" id="activeCount">0</span>
+        </div>
+        <div id="activeNumbersList"></div>
+      </div>
+    </div>
+
+    <!-- ORDERS TAB -->
+    <div class="tab-panel" id="panel-orders">
+      <div class="section-header">
+        <div class="section-title">📋 Order History</div>
+        <button class="btn btn-secondary btn-sm" onclick="loadOrders()">🔄 Refresh</button>
+      </div>
+      <div id="ordersList">
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div class="empty-state-text">No orders yet. Buy a number to get started.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SERVICES TAB -->
+    <div class="tab-panel" id="panel-services">
+      <div class="card-title" style="margin-bottom:12px">🗂️ Browse &amp; Filter Services</div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="form-control" type="text" id="svcSearch" placeholder="Search all services..." oninput="filterSvcTab()"/>
+      </div>
+      <div class="filter-chips" id="filterChips">
+        <div class="chip active" onclick="setSvcFilter('all',this)">All</div>
+        <div class="chip" onclick="setSvcFilter('jio',this)">Jio</div>
+        <div class="chip" onclick="setSvcFilter('wa',this)">WhatsApp</div>
+        <div class="chip" onclick="setSvcFilter('tg',this)">Telegram</div>
+        <div class="chip" onclick="setSvcFilter('go',this)">Google</div>
+        <div class="chip" onclick="setSvcFilter('fb',this)">Facebook</div>
+        <div class="chip" onclick="setSvcFilter('ig',this)">Instagram</div>
+        <div class="chip" onclick="setSvcFilter('tw',this)">Twitter/X</div>
+        <div class="chip" onclick="setSvcFilter('am',this)">Amazon</div>
+        <div class="chip" onclick="setSvcFilter('ot',this)">Other</div>
+      </div>
+      <div class="services-grid" id="svcGrid">
+        <div class="loading-overlay" style="grid-column:1/-1">
+          <div class="loading-spinner dark"></div>
+          <span>Loading services...</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /mainApp -->
+
+<!-- CANCEL MODAL -->
+<div class="modal-overlay" id="cancelModal">
+  <div class="modal">
+    <div class="modal-title">❌ Cancel Number?</div>
+    <div class="modal-body">Are you sure you want to cancel this number? This action cannot be undone and you may not get a refund.</div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeCancelModal()">Keep It</button>
+      <button class="btn btn-danger" id="confirmCancelBtn" onclick="confirmCancel()">Yes, Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGOUT MODAL -->
+<div class="modal-overlay" id="logoutModal">
+  <div class="modal">
+    <div class="modal-title">🔑 Change API Key?</div>
+    <div class="modal-body">This will remove your current API key and all active number tracking from this session. You can re-enter your key afterwards.</div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeLogoutModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmLogout()">Yes, Logout</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toastContainer"></div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let apiKey = '';
+let balance = '--';
+let allServices = [];
+let filteredServices = [];
+let selectedService = null;
+let activeNumbers = [];
+let orderHistory = [];
+let pollingInterval = null;
+let autoClickerInterval = null;
+let autoClickerActive = false;
+let cancelTargetTxn = null;
+let svcFilter = 'all';
+let allSvcTabServices = [];
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  const savedKey = localStorage.getItem('otp_api_key');
+  if (savedKey) {
+    apiKey = savedKey;
+    initApp();
+  } else {
+    showApiKeyScreen();
+  }
+});
+
+function showApiKeyScreen() {
+  document.getElementById('apiKeyScreen').style.display = 'flex';
+  document.getElementById('mainApp').classList.remove('visible');
+}
+
+function initApp() {
+  document.getElementById('apiKeyScreen').style.display = 'none';
+  document.getElementById('mainApp').classList.add('visible');
+  updateMaskedKey();
+  refreshBalance();
+  loadServices();
+  loadActiveFromStorage();
+  startPolling();
+}
+
+// ============================================================
+// API KEY
+// ============================================================
+async function submitApiKey() {
+  const input = document.getElementById('apiKeyInput');
+  const btn = document.getElementById('akSubmitBtn');
+  const errEl = document.getElementById('akError');
+  const key = input.value.trim();
+  if (!key) {
+    showAkError('Please enter your API key.');
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spinner"></span> Validating...';
+  errEl.style.display = 'none';
+  try {
+    const res = await fetch(`/api/balance?api_key=${encodeURIComponent(key)}`);
+    const data = await res.json();
+    if (data.error === 'BAD_KEY' || data._raw === 'BAD_KEY') {
+      showAkError('Invalid API key. Please check and try again.');
+    } else if (data.error && !data.balance && data._raw !== 'BAD_KEY') {
+      // try raw string — some keys work but balance endpoint may differ
+      if (data._raw && data._raw.startsWith('BAD_KEY')) {
+        showAkError('Invalid API key.');
+      } else {
+        // accept anyway
+        apiKey = key;
+        localStorage.setItem('otp_api_key', key);
+        initApp();
+      }
+    } else {
+      apiKey = key;
+      localStorage.setItem('otp_api_key', key);
+      initApp();
+    }
+  } catch(e) {
+    showAkError('Connection error. Please try again.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Validate & Continue';
+  }
+}
+
+function showAkError(msg) {
+  const el = document.getElementById('akError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+document.addEventListener('keydown', (e) => {
+  if (document.getElementById('apiKeyScreen').style.display !== 'none' && e.key === 'Enter') {
+    submitApiKey();
+  }
+});
+
+// ============================================================
+// LOGOUT
+// ============================================================
+function showLogoutConfirm() {
+  document.getElementById('logoutModal').classList.add('open');
+}
+function closeLogoutModal() {
+  document.getElementById('logoutModal').classList.remove('open');
+}
+function confirmLogout() {
+  closeLogoutModal();
+  stopPolling();
+  stopAutoClicker();
+  apiKey = '';
+  activeNumbers = [];
+  selectedService = null;
+  localStorage.removeItem('otp_api_key');
+  localStorage.removeItem('otp_active_numbers');
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('akError').style.display = 'none';
+  document.getElementById('mainApp').classList.remove('visible');
+  showApiKeyScreen();
+}
+
+function updateMaskedKey() {
+  if (!apiKey) return;
+  const masked = apiKey.substring(0, 4) + '••••••••' + apiKey.slice(-4);
+  document.getElementById('maskedKey').textContent = masked;
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`panel-${tab}`).classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  if (tab === 'orders') loadOrders();
+  if (tab === 'services') renderSvcTab();
+}
+
+// ============================================================
+// BALANCE
+// ============================================================
+async function refreshBalance() {
+  const el = document.getElementById('balanceAmount');
+  el.textContent = '...';
+  try {
+    const res = await fetch(`/api/balance?api_key=${encodeURIComponent(apiKey)}`);
+    const data = await res.json();
+    let bal = extractBalance(data);
+    if (bal !== null) {
+      balance = bal;
+      el.textContent = '₹' + parseFloat(bal).toFixed(2);
+    } else {
+      el.textContent = '₹--';
+    }
+  } catch(e) {
+    el.textContent = '₹--';
+  }
+}
+
+function extractBalance(data) {
+  if (data && data.balance !== undefined) return data.balance;
+  if (data && data.updatedBalance !== undefined) return data.updatedBalance;
+  if (data && data._raw) {
+    const raw = data._raw;
+    if (raw.startsWith('ACCESS_BALANCE:')) return raw.split(':')[1];
+    const num = parseFloat(raw);
+    if (!isNaN(num)) return num;
+  }
+  return null;
+}
+
+// ============================================================
+// SERVICES
+// ============================================================
+async function loadServices() {
+  const list = document.getElementById('serviceList');
+  list.innerHTML = '<div class="service-empty"><div class="loading-spinner dark"></div></div>';
+  try {
+    const res = await fetch(`/api/services?api_key=${encodeURIComponent(apiKey)}`);
+    const data = await res.json();
+    allServices = parseServices(data);
+    allSvcTabServices = [...allServices];
+    filteredServices = [...allServices];
+    renderServiceList();
+    renderSvcTab();
+  } catch(e) {
+    list.innerHTML = '<div class="service-empty">Failed to load services. Please refresh.</div>';
+    showToast('Failed to load services', 'error');
+  }
+}
+
+function parseServices(data) {
+  // Handle various response formats
+  if (Array.isArray(data)) return data.map(normalizeService);
+  if (data && data.data && Array.isArray(data.data)) return data.data.map(normalizeService);
+  if (data && data.services && Array.isArray(data.services)) return data.services.map(normalizeService);
+  if (data && data._raw) {
+    // try to parse raw string
+    try { return JSON.parse(data._raw).map(normalizeService); } catch(e) {}
+  }
+  // Fallback: return known popular services
+  return getDefaultServices();
+}
+
+function normalizeService(s) {
+  return {
+    code: s.code || s.service || s.id || s.name || 'unknown',
+    name: s.name || s.service || s.code || 'Unknown Service',
+    server: s.server || s.provider || 'Default',
+    price: s.price || s.cost || 0,
+    category: s.category || inferCategory(s.code || s.name || '')
+  };
+}
+
+function inferCategory(code) {
+  const c = code.toLowerCase();
+  if (c.includes('jio')) return 'jio';
+  if (c === 'wa' || c.includes('whatsapp')) return 'wa';
+  if (c === 'tg' || c.includes('telegram')) return 'tg';
+  if (c === 'go' || c.includes('google')) return 'go';
+  if (c === 'fb' || c.includes('facebook')) return 'fb';
+  if (c === 'ig' || c.includes('instagram')) return 'ig';
+  if (c === 'tw' || c.includes('twitter')) return 'tw';
+  if (c === 'am' || c.includes('amazon')) return 'am';
+  return 'ot';
+}
+
+function getDefaultServices() {
+  return [
+    {code:'jio',name:'Jio',server:'Primary',price:1.5,category:'jio'},
+    {code:'wa',name:'WhatsApp',server:'Primary',price:2.0,category:'wa'},
+    {code:'tg',name:'Telegram',server:'Primary',price:1.5,category:'tg'},
+    {code:'go',name:'Google',server:'Primary',price:2.5,category:'go'},
+    {code:'fb',name:'Facebook',server:'Primary',price:2.0,category:'fb'},
+    {code:'ig',name:'Instagram',server:'Primary',price:2.0,category:'ig'},
+    {code:'tw',name:'Twitter/X',server:'Primary',price:2.5,category:'tw'},
+    {code:'am',name:'Amazon',server:'Primary',price:2.0,category:'am'},
+    {code:'ub',name:'Uber',server:'Primary',price:2.0,category:'ot'},
+    {code:'ln',name:'LinkedIn',server:'Primary',price:2.5,category:'ot'},
+  ];
+}
+
+function filterServices() {
+  const q = document.getElementById('serviceSearch').value.toLowerCase();
+  filteredServices = allServices.filter(s =>
+    s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q)
+  );
+  renderServiceList();
+}
+
+function renderServiceList() {
+  const list = document.getElementById('serviceList');
+  if (!filteredServices.length) {
+    list.innerHTML = '<div class="service-empty">No services found.</div>';
+    return;
+  }
+  list.innerHTML = filteredServices.map(s => `
+    <div class="service-card ${selectedService && selectedService.code === s.code ? 'selected' : ''}"
+         onclick="selectService(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+      <div class="service-name">${escHtml(s.name)}</div>
+      <div class="service-server">📡 ${escHtml(String(s.server))}</div>
+      <div class="service-price">₹${parseFloat(s.price||0).toFixed(2)}</div>
+    </div>
+  `).join('');
+}
+
+function selectService(s) {
+  selectedService = s;
+  renderServiceList();
+  document.getElementById('buyPanel').style.display = 'block';
+  document.getElementById('buyPanelService').textContent = s.name + ' (' + s.code + ')';
+  document.getElementById('buyPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function onCountryChange() {
+  loadServices();
+}
+
+// ============================================================
+// BUY NUMBER
+// ============================================================
+async function buyNumber() {
+  if (!selectedService) { showToast('Please select a service first', 'warning'); return; }
+  const btn = document.getElementById('buyNowBtn');
+  const maxPrice = document.getElementById('maxPriceInput').value.trim();
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spinner"></span> Buying...';
+  try {
+    const payload = {api_key: apiKey, service: selectedService.code};
+    const country = document.getElementById('countrySelect').value;
+    if (country) payload.country = country;
+    if (maxPrice) payload.max_price = maxPrice;
+    const res = await fetch('/api/buy', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    const result = parseBuyResponse(data);
+    if (result.success) {
+      const num = {
+        transactionId: result.transactionId,
+        phoneNumber: result.phoneNumber,
+        service: selectedService.name,
+        serviceCode: selectedService.code,
+        server: selectedService.server || 'Default',
+        price: result.price || selectedService.price || 0,
+        purchasedAt: Date.now(),
+        status: 'active',
+        otp: null,
+        smsText: null,
+        canGetAnotherSms: result.canGetAnotherSms || 0
+      };
+      activeNumbers.unshift(num);
+      saveActiveToStorage();
+      renderActiveNumbers();
+      document.getElementById('activeSection').style.display = 'block';
+      refreshBalance();
+      showToast('✅ Number purchased: ' + result.phoneNumber, 'success');
+      playBeep();
+      if (autoClickerActive) {
+        stopAutoClicker();
+        document.getElementById('autoClickerStatus').textContent = '✅ Number purchased! Auto clicker stopped.';
+      }
+    } else {
+      const errMsg = result.error || 'Failed to buy number';
+      handleBuyError(errMsg);
+    }
+  } catch(e) {
+    showToast('Network error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🛒 Buy Now';
+  }
+}
+
+function parseBuyResponse(data) {
+  // JSON success format
+  if (data && data.success && data.data) {
+    return {
+      success: true,
+      transactionId: String(data.data.transactionId || data.data.id || ''),
+      phoneNumber: String(data.data.phoneNumber || data.data.phone || ''),
+      canGetAnotherSms: data.data.canGetAnotherSms || 0,
+      price: data.updatedBalance ? null : null
+    };
+  }
+  // Raw string format: ACCESS_NUMBER:id:phone
+  if (data && data._raw) {
+    const raw = data._raw;
+    if (raw.startsWith('ACCESS_NUMBER:')) {
+      const parts = raw.split(':');
+      return { success: true, transactionId: parts[1], phoneNumber: parts[2] };
+    }
+    return { success: false, error: raw };
+  }
+  if (data && data.error) return { success: false, error: data.error };
+  if (data && data.message) return { success: false, error: data.message };
+  return { success: false, error: 'Unknown error' };
+}
+
+function handleBuyError(err) {
+  const msgs = {
+    'NO_NUMBERS': '⚠️ No numbers available for this service. Try again.',
+    'NO_BALANCE': '💰 Insufficient balance. Please top up.',
+    'BAD_KEY': '🔑 Invalid API key.',
+    'BAD_SERVICE': '❌ Invalid service code.',
+    'PRICE_TOO_HIGH': '💸 Price too high for selected max price.',
+    'TRY_AGAIN': '🔄 Server busy. Please try again.',
+    'ERROR_SQL': '⚠️ Server database error. Try again.',
+  };
+  const msg = msgs[err] || ('Error: ' + err);
+  showToast(msg, err === 'NO_NUMBERS' || err === 'TRY_AGAIN' ? 'warning' : 'error');
+}
+
+// ============================================================
+// AUTO CLICKER
+// ============================================================
+function onAutoClickerToggle() {
+  const toggle = document.getElementById('autoClickerToggle');
+  if (toggle.checked) {
+    if (!selectedService) {
+      showToast('Select a service first', 'warning');
+      toggle.checked = false;
+      return;
+    }
+    startAutoClicker();
+  } else {
+    stopAutoClicker();
+  }
+}
+
+function startAutoClicker() {
+  autoClickerActive = true;
+  document.getElementById('autoClickerStatus').textContent = '🔄 Active — retrying every 5 seconds...';
+  autoClickerInterval = setInterval(async () => {
+    if (!autoClickerActive) return;
+    document.getElementById('autoClickerStatus').textContent = '⚡ Attempting to buy...';
+    await buyNumber();
+  }, 5000);
+}
+
+function stopAutoClicker() {
+  autoClickerActive = false;
+  clearInterval(autoClickerInterval);
+  autoClickerInterval = null;
+  const toggle = document.getElementById('autoClickerToggle');
+  if (toggle) toggle.checked = false;
+  const status = document.getElementById('autoClickerStatus');
+  if (status) status.textContent = 'Off — Toggle to auto-retry every 5 seconds';
+}
+
+// ============================================================
+// ACTIVE NUMBERS
+// ============================================================
+function renderActiveNumbers() {
+  const container = document.getElementById('activeNumbersList');
+  const section = document.getElementById('activeSection');
+  const countBadge = document.getElementById('activeCount');
+  const active = activeNumbers.filter(n => n.status !== 'cancelled' && n.status !== 'done');
+  countBadge.textContent = active.length;
+  if (!active.length) {
+    section.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+  section.style.display = 'block';
+  container.innerHTML = active.map(n => renderNumberCard(n)).join('');
+}
+
+function renderNumberCard(n) {
+  const elapsed = Math.floor((Date.now() - n.purchasedAt) / 1000);
+  const remaining = Math.max(0, 1200 - elapsed);
+  const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+  const ss = String(remaining % 60).padStart(2, '0');
+  const urgent = remaining < 60;
+  const timerClass = urgent ? 'timer urgent' : 'timer';
+
+  let smsSection = '';
+  if (n.otp || n.smsText) {
+    smsSection = `
+      <div class="sms-box">
+        <div class="sms-label">✅ SMS Received</div>
+        <div class="sms-text">${escHtml(n.smsText || '')}</div>
+        ${n.otp ? `<span class="otp-highlight">${escHtml(n.otp)}</span>` : ''}
+      </div>`;
+  } else {
+    smsSection = `
+      <div style="display:flex;align-items:center;gap:8px;margin:8px 0;color:var(--muted);font-size:14px">
+        <span class="waiting-dots">Waiting for SMS<span class="dots-anim"></span></span>
+      </div>`;
+  }
+
+  const copyOtpBtn = n.otp
+    ? `<button class="btn btn-green btn-sm" onclick="copyText('${escHtml(n.otp)}','OTP copied!')">📋 Copy OTP</button>`
+    : '';
+
+  return `
+    <div class="number-card" id="card-${n.transactionId}">
+      <div class="number-card-top">
+        <div>
+          <div class="number-service">${escHtml(n.service)}</div>
+          <div class="number-server">📡 ${escHtml(n.server)}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span class="number-price">₹${parseFloat(n.price||0).toFixed(2)}</span>
+          <span class="${timerClass}" id="timer-${n.transactionId}">${mm}:${ss}</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div class="number-phone" id="phone-${n.transactionId}">${escHtml(n.phoneNumber)}</div>
+        <button class="btn btn-secondary btn-sm" onclick="copyText('${escHtml(n.phoneNumber)}','Phone number copied!')">📋 Copy</button>
+      </div>
+      ${smsSection}
+      <div class="txn-id">TXN: ${escHtml(n.transactionId)}</div>
+      <div class="number-actions">
+        <button class="btn btn-secondary btn-sm" onclick="checkSms('${escHtml(n.transactionId)}')">🔍 Check SMS</button>
+        <button class="btn btn-warning btn-sm" onclick="rebuyNumber('${escHtml(n.transactionId)}')">🔄 Rebuy</button>
+        ${copyOtpBtn}
+        <button class="btn btn-danger btn-sm" onclick="openCancelModal('${escHtml(n.transactionId)}')">❌ Cancel</button>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// TIMER UPDATES
+// ============================================================
+setInterval(() => {
+  activeNumbers.forEach(n => {
+    if (n.status === 'cancelled' || n.status === 'done') return;
+    const el = document.getElementById(`timer-${n.transactionId}`);
+    if (!el) return;
+    const elapsed = Math.floor((Date.now() - n.purchasedAt) / 1000);
+    const remaining = Math.max(0, 1200 - elapsed);
+    const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+    const ss = String(remaining % 60).padStart(2, '0');
+    el.textContent = `${mm}:${ss}`;
+    el.className = remaining < 60 ? 'timer urgent' : 'timer';
+    if (remaining === 0) {
+      n.status = 'done';
+      saveActiveToStorage();
+    }
+  });
+}, 1000);
+
+// ============================================================
+// SMS POLLING
+// ============================================================
+function startPolling() {
+  stopPolling();
+  pollingInterval = setInterval(pollAllActive, 8000);
+}
+
+function stopPolling() {
+  if (pollingInterval) clearInterval(pollingInterval);
+  pollingInterval = null;
+}
+
+async function pollAllActive() {
+  const nums = activeNumbers.filter(n => n.status === 'active' && !n.otp);
+  for (const n of nums) {
+    await checkSmsQuiet(n.transactionId);
+  }
+}
+
+async function checkSms(txnId) {
+  const n = activeNumbers.find(x => x.transactionId === txnId);
+  if (!n) return;
+  try {
+    const res = await fetch('/api/otp', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({api_key: apiKey, transaction_id: txnId})
+    });
+    const data = await res.json();
+    const result = parseOtpResponse(data);
+    if (result.otp) {
+      n.otp = result.otp;
+      n.smsText = result.smsText || result.otp;
+      n.status = 'completed';
+      saveActiveToStorage();
+      renderActiveNumbers();
+      updateOrderEntry(n);
+      showToast('📩 OTP received: ' + result.otp, 'success');
+      playBeep();
+    } else if (result.status === 'STATUS_CANCEL') {
+      n.status = 'cancelled';
+      saveActiveToStorage();
+      renderActiveNumbers();
+      showToast('Number was cancelled', 'warning');
+    } else {
+      showToast('No SMS yet. Still waiting...', 'warning');
+    }
+  } catch(e) {
+    showToast('Error checking SMS', 'error');
+  }
+}
+
+async function checkSmsQuiet(txnId) {
+  const n = activeNumbers.find(x => x.transactionId === txnId);
+  if (!n) return;
+  try {
+    const res = await fetch('/api/otp', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({api_key: apiKey, transaction_id: txnId})
+    });
+    const data = await res.json();
+    const result = parseOtpResponse(data);
+    if (result.otp) {
+      n.otp = result.otp;
+      n.smsText = result.smsText || result.otp;
+      n.status = 'completed';
+      saveActiveToStorage();
+      renderActiveNumbers();
+      updateOrderEntry(n);
+      showToast('📩 OTP received for ' + n.service + ': ' + result.otp, 'success');
+      playBeep();
+    } else if (result.status === 'STATUS_CANCEL') {
+      n.status = 'cancelled';
+      saveActiveToStorage();
+      renderActiveNumbers();
+    }
+  } catch(e) {}
+}
+
+function parseOtpResponse(data) {
+  if (data && data.success && data.otp) {
+    return { otp: String(data.otp), smsText: data.sms || data.otp };
+  }
+  if (data && data.otp) return { otp: String(data.otp) };
+  if (data && data._raw) {
+    const raw = data._raw;
+    if (raw.startsWith('STATUS_OK:')) {
+      const parts = raw.split(':');
+      return { otp: parts[1], smsText: parts.slice(1).join(':') };
+    }
+    if (raw === 'STATUS_WAIT') return { waiting: true };
+    if (raw === 'STATUS_CANCEL') return { status: 'STATUS_CANCEL' };
+    if (raw === 'NO_ACTIVATION') return { error: 'NO_ACTIVATION' };
+  }
+  if (data && data.error) return { error: data.error };
+  return { waiting: true };
+}
+
+// ============================================================
+// CANCEL
+// ============================================================
+function openCancelModal(txnId) {
+  cancelTargetTxn = txnId;
+  document.getElementById('cancelModal').classList.add('open');
+}
+
+function closeCancelModal() {
+  document.getElementById('cancelModal').classList.remove('open');
+  cancelTargetTxn = null;
+}
+
+async function confirmCancel() {
+  if (!cancelTargetTxn) return;
+  const btn = document.getElementById('confirmCancelBtn');
+  btn.disabled = true;
+  btn.textContent = 'Cancelling...';
+  try {
+    const res = await fetch('/api/cancel', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({api_key: apiKey, transaction_id: cancelTargetTxn})
+    });
+    const data = await res.json();
+    if (data.success || (data._raw && data._raw.toLowerCase().includes('cancel'))) {
+      const n = activeNumbers.find(x => x.transactionId === cancelTargetTxn);
+      if (n) n.status = 'cancelled';
+      saveActiveToStorage();
+      renderActiveNumbers();
+      refreshBalance();
+      showToast('Number cancelled successfully', 'success');
+    } else {
+      showToast('Failed to cancel: ' + (data.message || data.error || 'Unknown error'), 'error');
+    }
+  } catch(e) {
+    showToast('Network error cancelling number', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Yes, Cancel';
+    closeCancelModal();
+  }
+}
+
+// ============================================================
+// REBUY
+// ============================================================
+async function rebuyNumber(txnId) {
+  try {
+    const res = await fetch('/api/rebuy', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({api_key: apiKey, transaction_id: txnId})
+    });
+    const data = await res.json();
+    if (data.success || (data._raw && !data._raw.startsWith('ERROR'))) {
+      const n = activeNumbers.find(x => x.transactionId === txnId);
+      if (n) {
+        n.otp = null;
+        n.smsText = null;
+        n.status = 'active';
+        n.purchasedAt = Date.now();
+        saveActiveToStorage();
+        renderActiveNumbers();
+      }
+      showToast('Requesting another SMS...', 'success');
+    } else {
+      showToast('Rebuy failed: ' + (data.error || data._raw || 'Unknown'), 'error');
+    }
+  } catch(e) {
+    showToast('Network error on rebuy', 'error');
+  }
+}
+
+// ============================================================
+// ORDERS
+// ============================================================
+async function loadOrders() {
+  const container = document.getElementById('ordersList');
+  container.innerHTML = '<div class="loading-overlay"><div class="loading-spinner dark"></div><span>Loading orders...</span></div>';
+  try {
+    const res = await fetch(`/api/history?api_key=${encodeURIComponent(apiKey)}`);
+    const data = await res.json();
+    let orders = parseHistory(data);
+    // Merge with local active numbers
+    activeNumbers.forEach(n => {
+      if (!orders.find(o => String(o.transactionId) === String(n.transactionId))) {
+        orders.unshift({
+          transactionId: n.transactionId,
+          phoneNumber: n.phoneNumber,
+          service: n.service,
+          status: n.status,
+          otp: n.otp,
+          purchasedAt: n.purchasedAt,
+          price: n.price
+        });
+      }
+    });
+    orderHistory = orders;
+    renderOrders(orders);
+  } catch(e) {
+    renderOrders(activeNumbers.map(n => ({
+      transactionId: n.transactionId,
+      phoneNumber: n.phoneNumber,
+      service: n.service,
+      status: n.status,
+      otp: n.otp,
+      purchasedAt: n.purchasedAt,
+      price: n.price
+    })));
+  }
+}
+
+function parseHistory(data) {
+  if (Array.isArray(data)) return data;
+  if (data && data.data && Array.isArray(data.data)) return data.data;
+  if (data && data.history && Array.isArray(data.history)) return data.history;
+  return [];
+}
+
+function renderOrders(orders) {
+  const container = document.getElementById('ordersList');
+  if (!orders.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📭</div>
+        <div class="empty-state-text">No orders found.</div>
+      </div>`;
+    return;
+  }
+  container.innerHTML = orders.map(o => {
+    const statusClass = o.status === 'active' ? 'status-active'
+      : o.status === 'cancelled' ? 'status-cancelled'
+      : 'status-completed';
+    const date = o.purchasedAt ? new Date(o.purchasedAt).toLocaleString() : 'Unknown';
+    return `
+      <div class="order-card">
+        <div class="order-top">
+          <div>
+            <div class="order-service">${escHtml(o.service || o.serviceName || 'Service')}</div>
+            <div class="order-meta">📅 ${escHtml(date)}</div>
+          </div>
+          <span class="order-status ${statusClass}">${escHtml((o.status||'unknown').toUpperCase())}</span>
+        </div>
+        <div class="order-phone">${escHtml(o.phoneNumber || o.phone || '--')}</div>
+        <div class="order-meta">TXN: ${escHtml(String(o.transactionId || '--'))} &nbsp;|&nbsp; ₹${parseFloat(o.price||0).toFixed(2)}</div>
+        ${o.otp ? `<div class="order-otp">OTP: ${escHtml(o.otp)}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function updateOrderEntry(n) {
+  // Update in history if rendered
+  const orders = orderHistory.map(o =>
+    String(o.transactionId) === String(n.transactionId) ? {...o, otp: n.otp, status: n.status} : o
+  );
+  orderHistory = orders;
+}
+
+// ============================================================
+// SERVICES TAB
+// ============================================================
+function renderSvcTab() {
+  filterSvcTab();
+}
+
+function setSvcFilter(filter, el) {
+  svcFilter = filter;
+  document.querySelectorAll('.filter-chips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  filterSvcTab();
+}
+
+function filterSvcTab() {
+  const q = document.getElementById('svcSearch').value.toLowerCase();
+  let list = allSvcTabServices;
+  if (svcFilter !== 'all') {
+    list = list.filter(s => {
+      const cat = s.category || inferCategory(s.code || s.name || '');
+      return cat === svcFilter || s.code.toLowerCase().startsWith(svcFilter);
+    });
+  }
+  if (q) {
+    list = list.filter(s => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q));
+  }
+  renderSvcGrid(list);
+}
+
+function renderSvcGrid(list) {
+  const grid = document.getElementById('svcGrid');
+  if (!list.length) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-state-icon">🔍</div>
+        <div class="empty-state-text">No services match your filter.</div>
+      </div>`;
+    return;
+  }
+  grid.innerHTML = list.map(s => `
+    <div class="svc-item" onclick="selectSvcAndSwitch(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+      <div class="svc-item-name">${escHtml(s.name)}</div>
+      <div class="svc-item-code">${escHtml(s.code)}</div>
+      <div class="svc-item-price">₹${parseFloat(s.price||0).toFixed(2)}</div>
+    </div>
+  `).join('');
+}
+
+function selectSvcAndSwitch(s) {
+  switchTab('buy');
+  selectService(s);
+  window.scrollTo({top:0, behavior:'smooth'});
+  showToast(s.name + ' selected', 'info');
+}
+
+// ============================================================
+// STORAGE
+// ============================================================
+function saveActiveToStorage() {
+  localStorage.setItem('otp_active_numbers', JSON.stringify(activeNumbers));
+}
+
+function loadActiveFromStorage() {
+  try {
+    const saved = localStorage.getItem('otp_active_numbers');
+    if (saved) {
+      activeNumbers = JSON.parse(saved);
+      renderActiveNumbers();
+    }
+  } catch(e) {
+    activeNumbers = [];
+  }
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
+function copyText(text, msg) {
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(msg || 'Copied!', 'success');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast(msg || 'Copied!', 'success');
+  });
+}
+
+function showToast(msg, type='info') {
+  const container = document.getElementById('toastContainer');
+  const div = document.createElement('div');
+  div.className = `toast toast-${type}`;
+  div.textContent = msg;
+  container.appendChild(div);
+  setTimeout(() => {
+    div.style.opacity = '0';
+    div.style.transition = 'opacity .4s';
+    setTimeout(() => { if (div.parentNode) container.removeChild(div); }, 400);
+  }, 3000);
+}
+
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.5);
+  } catch(e) {}
+}
+
+// Close modals on overlay click
+document.getElementById('cancelModal').addEventListener('click', function(e) {
+  if (e.target === this) closeCancelModal();
+});
+document.getElementById('logoutModal').addEventListener('click', function(e) {
+  if (e.target === this) closeLogoutModal();
+});
+</script>
+</body>
+</html>
